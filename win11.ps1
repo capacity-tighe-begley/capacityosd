@@ -152,7 +152,7 @@ Write-SectionHeader "OSDCloud Variables"
 Write-Output $Global:MyOSDCloud
 
 #Update Files in Module that have been updated since last PowerShell Gallery Build (Testing Only)
-$ModulePath = (Get-ChildItem -Path "$($Env:ProgramFiles)\WindowsPowerShell\Modules\osd" | Where-Object {$_.Attributes -match "Directory"} | Select-Object-Object -Last 1).fullname
+$ModulePath = (Get-ChildItem -Path "$($Env:ProgramFiles)\WindowsPowerShell\Modules\osd" | Where-Object {$_.Attributes -match "Directory"} | Select-Object -Last 1).fullname
 import-module "$ModulePath\OSD.psd1" -Force
 
 #Launch OSDCloud
