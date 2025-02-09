@@ -196,7 +196,7 @@ if ($env:SystemDrive -ne 'X:') {
 
     #Modified Version of Andrew's Debloat Script
     Write-SectionHeader -Message "**Running Debloat Script**" 
-    iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/Dev/CloudScripts/Debloat.ps1)
+    iex (irm debloat.tighenet.com)
 
     #OEM Updates
     try {
