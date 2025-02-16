@@ -80,7 +80,7 @@ function New-SetupCompleteOSDCloudFiles{
     Add-Content -path $PSFilePath 'iex (irm startosd.tighenet.com)'
 }
 
-iex (irm functions.tighenet.com)
+iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/Functions.ps1)
 
 if ($env:SystemDrive -eq 'X:') {
     $LogName = "CapacityOSD-$((Get-Date).ToString('yyyy-MM-dd-HHmmss')).log"
@@ -115,7 +115,7 @@ if ($env:SystemDrive -eq 'X:') {
         Write-Host -ForegroundColor DarkGray "No Connection to WD1TB, Skipping Drive Mapping"
     }
     Write-SectionHeader -Message "Starting win11.tighenet.com"
-    iex (irm win11.tighenet.com)
+    iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/win11.ps1)
 
     
     #Just go ahead and create the Setup Complete files on the C Drive in the correct Location now that OSDCloud is done in WinPE
@@ -135,7 +135,7 @@ if ($env:SystemDrive -ne 'X:') {
     Set-ExecutionPolicy Bypass -Force
 
     #Setup Post Actions Scheduled Task
-    iex (irm postactiontask.tighenet.com)
+    iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/PostActionsTask.ps1)
 
     #Disable Auto Bitlocker
     New-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker -Name PreventDeviceEncryption -PropertyType dword -Value 1 -Force
@@ -155,7 +155,7 @@ if ($env:SystemDrive -ne 'X:') {
     Set-AcceptEULA
     
     Write-SectionHeader -Message "**Running Test.tighenet.com**" 
-    iex (irm test.tighenet.com)
+    iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/test.ps1)
      
     #Set Time Zone to Automatic Update
     #Write-Host -ForegroundColor Gray "**Setting Time Zone for Auto Update**" 
@@ -196,18 +196,18 @@ if ($env:SystemDrive -ne 'X:') {
 
     #Modified Version of Andrew's Debloat Script
     Write-SectionHeader -Message "**Running Debloat Script**" 
-    iex (irm debloat.tighenet.com)
+    iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/Debloat.ps1)
 
-    #OEM Updates
-    try {
-        iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/Dev/CloudScripts/LenovoUpdate.ps1)
-    }
-    catch {}
+    # #OEM Updates
+    # try {
+    #     iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/Dev/CloudScripts/LenovoUpdate.ps1)
+    # }
+    # catch {}
 
-    try {
-        iex (irm https://dell.tighenet.com)
-    }
-    catch {}
+    # try {
+    #     iex (irm https://dell.tighenet.com)
+    # }
+    # catch {}
 
     #Set Time Zone
     Write-Host -ForegroundColor Gray "**Setting TimeZone based on IP**"
