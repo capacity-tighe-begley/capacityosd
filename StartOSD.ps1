@@ -35,7 +35,8 @@ function Write-SectionHeader {
     )
     Write-DarkGrayLine
     Write-DarkGrayDate
-    Write-Host -ForegroundColor Cyan $Message
+    Write-DarkGrayHost -Message $Message
+    Write-Host -ForegroundColor DarkGray "$Message"
 }
 function Write-SectionSuccess {
     [CmdletBinding()]
