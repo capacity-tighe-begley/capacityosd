@@ -86,7 +86,7 @@ if ($env:SystemDrive -eq 'X:') {
     $LogName = "CapacityOSD-$((Get-Date).ToString('yyyy-MM-dd-HHmmss')).log"
     Start-Transcript -Path $env:TEMP\$LogName -Append -Force
 }
-Write-SectionHeader -Message "Starting $ScriptName1 $ScriptVersion1"
+Write-SectionHeader -Message "Starting $ScriptName $ScriptVersion"
 write-host "Added Function New-SetupCompleteOSDCloudFiles" -ForegroundColor Green
 
 $ScriptName = 'startosd'
