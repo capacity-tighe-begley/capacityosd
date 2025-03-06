@@ -26,18 +26,18 @@ function Write-DarkGrayLine {
     param ()
     Write-Host -ForegroundColor DarkGray '========================================================================='
 }
-# function Write-SectionHeader {
-#     [CmdletBinding()]
-#     param (
-#         [Parameter(Mandatory = $true, Position = 0)]
-#         [System.String]
-#         $Message
-#     )
-#     Write-DarkGrayLine
-#     Write-DarkGrayDate
-#     Write-DarkGrayHost -Message $Message
-#     Write-Host -ForegroundColor DarkGray "$Message"
-# }
+function Write-SectionHeader {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [System.String]
+        $Message
+    )
+    Write-DarkGrayLine
+    Write-DarkGrayDate
+    Write-DarkGrayHost -Message $Message
+    Write-Host -ForegroundColor DarkGray "$Message"
+}
 function Write-SectionSuccess {
     [CmdletBinding()]
     param (

@@ -321,104 +321,12 @@ Function Install-Update {
     
     return $DISM.ExitCode
 }
-Write-Host -ForegroundColor Green "[+] Function Disable-Copliot"
-Function Disable-Copilot {
-
-    if ($env:SystemDrive -eq 'X:') {
-        $WindowsPhase = 'WinPE'
-    }
-    else {
-        $ImageState = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup\State' -ErrorAction Ignore).ImageState
-        if ($env:UserName -eq 'defaultuser0') {$WindowsPhase = 'OOBE'}
-        elseif ($ImageState -eq 'IMAGE_STATE_SPECIALIZE_RESEAL_TO_OOBE') {$WindowsPhase = 'Specialize'}
-        elseif ($ImageState -eq 'IMAGE_STATE_SPECIALIZE_RESEAL_TO_AUDIT') {$WindowsPhase = 'AuditMode'}
-        else {$WindowsPhase = 'Windows'}
-    }
-    Write-Output "Running in $WindowsPhase"
-    if ($WindowsPhase -eq 'WinPE'){
-    
-        # Mount and edit the setup environment's registry
-        $REG_System = "C:\Windows\System32\config\system"
-        $REG_Software = "C:\Windows\system32\config\SOFTWARE"
-        $VirtualRegistryPath_SYSTEM = "HKLM\WinPE_SYSTEM"#Load Command
-        $VirtualRegistryPath_SOFTWARE = "HKLM\WinPE_SOFTWARE"#Load Command
-        $VirtualRegistryPath_copilot = "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" #PowerShell Path
-
-        # $VirtualRegistryPath_LabConfig = $VirtualRegistryPath_Setup + "\LabConfig"
-        reg unload $VirtualRegistryPath_SYSTEM | Out-Null # Just in case...
-        reg unload $VirtualRegistryPath_SOFTWARE | Out-Null # Just in case...
-        Start-Sleep 1
-        reg load $VirtualRegistryPath_SYSTEM $REG_System | Out-Null
-        reg load $VirtualRegistryPath_SOFTWARE $REG_Software | Out-Null
-
-        New-ItemProperty -Path $VirtualRegistryPath_copilot -Name "TurnOffWindowsCopilot" -Value 1 -PropertyType DWord -Force
-
-
-
-        Start-Sleep 1
-        reg unload $VirtualRegistryPath_SYSTEM
-        reg unload $VirtualRegistryPath_SOFTWARE
-
-	    $REG_defaultuser = "c:\users\default\ntuser.dat"
-    	$VirtualRegistryPath_defaultuser = "HKLM\DefUser" #Load Command
-    	$VirtualRegistryPath_software = "HKLM:\DefUser\Software" #PowerShell Path
-
-    	reg unload $VirtualRegistryPath_defaultuser | Out-Null # Just in case...
-    	Start-Sleep 1
-    	reg load $VirtualRegistryPath_defaultuser $REG_defaultuser | Out-Null
-    	#Enable Location for Auto Time Zone
-    	$Path = "$VirtualRegistryPath_software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location"
-    	New-ItemProperty -Path $Path -Name "Value" -Value Allow -PropertyType String -Force | Out-Null
-    
-    	reg unload $VirtualRegistryPath_defaultuser | Out-Null     
-    }
-    else {
-        Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location -Name Value -Value "Allow" -Type String | out-null
-	Set-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location -Name Value -Value "Allow" -Type String | out-null
-        Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Services\tzautoupdate -Name start -Value "3" -Type DWord | out-null
-    }
-}
-Write-Host -ForegroundColor Green "[+] Disable-CloudContent"
+Write-Host -ForegroundColor Green "[+] Function Disable-CloudContent"
 Function Disable-CloudContent {
-
-    if ($env:SystemDrive -eq 'X:') {
-        $WindowsPhase = 'WinPE'
-    }
-    else {
-        $ImageState = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup\State' -ErrorAction Ignore).ImageState
-        if ($env:UserName -eq 'defaultuser0') {$WindowsPhase = 'OOBE'}
-        elseif ($ImageState -eq 'IMAGE_STATE_SPECIALIZE_RESEAL_TO_OOBE') {$WindowsPhase = 'Specialize'}
-        elseif ($ImageState -eq 'IMAGE_STATE_SPECIALIZE_RESEAL_TO_AUDIT') {$WindowsPhase = 'AuditMode'}
-        else {$WindowsPhase = 'Windows'}
-    }
-    Write-Output "Running in $WindowsPhase"
-    if ($WindowsPhase -eq 'WinPE'){
-    
-        # Mount and edit the setup environment's registry
-        $REG_System = "C:\Windows\System32\config\system"
-        $REG_Software = "C:\Windows\system32\config\SOFTWARE"
-        $VirtualRegistryPath_SYSTEM = "HKLM\WinPE_SYSTEM"#Load Command
-        $VirtualRegistryPath_SOFTWARE = "HKLM\WinPE_SOFTWARE"#Load Command
-        $VirtualRegistryPath_cloudcontent = "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" #PowerShell Path
-
-        # $VirtualRegistryPath_LabConfig = $VirtualRegistryPath_Setup + "\LabConfig"
-        reg unload $VirtualRegistryPath_SYSTEM | Out-Null # Just in case...
-        reg unload $VirtualRegistryPath_SOFTWARE | Out-Null # Just in case...
-        Start-Sleep 1
-        reg load $VirtualRegistryPath_SYSTEM $REG_System | Out-Null
-        reg load $VirtualRegistryPath_SOFTWARE $REG_Software | Out-Null
-
-        New-Item -Path $VirtualRegistryPath_cloudcontent -ItemType Directory
-        New-ItemProperty -Path $VirtualRegistryPath_cloudcontent -Name "DisableWindowsConsumerFeatures" -PropertyType dword -Value '1' -Force
-
-        Start-Sleep 1
-        reg unload $VirtualRegistryPath_SYSTEM
-        reg unload $VirtualRegistryPath_SOFTWARE
-   
-    }
-    else {
-        
-    }
+    New-Item -Path HKLM:\SOFTWARE\Policies\Microsoft\Windows -Name "CloudContent" -Force | out-null
+    New-ItemProperty -Path HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent -Name 'DisableWindowsConsumerFeatures' -Value 1 -PropertyType Dword -Force | out-null
+    New-ItemProperty -Path HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent -Name 'DisableSoftLanding' -Value 1 -PropertyType Dword -Force | out-null
+    New-ItemProperty -Path HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent -Name 'DisableCloudOptimizedContent' -Value 1 -PropertyType Dword -Force | out-null
 }
 Write-Host -ForegroundColor Green "[+] Function Set-DOPoliciesGPORegistry"
 Function Set-DOPoliciesGPORegistry {
@@ -600,19 +508,6 @@ function Set-DefaultProfilePersonalPref {
     New-ItemProperty -Path $Path -Name "Value" -Value Allow -PropertyType String -Force | Out-Null
     Start-Sleep -s 1
     reg unload $VirtualRegistryPath_defaultuser | Out-Null
-}
-
-Write-Host -ForegroundColor Green "[+] Function Remove-OneDrive"
-function Remove-OneDrive {
-    Remove-Item "C:\Users\Default\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\OneDrive.lnk" -ErrorAction SilentlyContinue
-    Remove-Item "C:\Users\Default\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\OneDrive.exe" -ErrorAction SilentlyContinue
-    Remove-Item "C:\Windows\System32\OneDriveSetup.exe" -ErrorAction SilentlyContinue
-    Remove-Item "C:\Windows\SysWOW64\OneDriveSetup.exe" -ErrorAction SilentlyContinue
-}
-
-Write-Host -ForegroundColor Green "[+] Function Disable-Recall"
-function Disable-Recall {
-    Dism /Online /Disable-Feature /Featurename:Recall /NoRestart | Out-Null
 }
 
 Write-Host -ForegroundColor Green "[+] Function Install-Nuget"
