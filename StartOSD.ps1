@@ -174,12 +174,6 @@ if ($env:SystemDrive -ne 'X:') {
     #Try to prevent crap from auto installing
     Write-Host -ForegroundColor Gray "**Disabling Cloud Content**" 
     Disable-CloudContent
-
-    Write-Host -ForegroundColor Gray "**Removing OneDrive**"
-    Remove-OneDrive
-
-    Write-Host -ForegroundColor Gray "**Disabling Copilot**"
-    Disable-Copilot
     
     #Set Win11 Bypasses
     Write-Host -ForegroundColor Gray "**Enabling Win11 Bypasses**" 
