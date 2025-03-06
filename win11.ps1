@@ -52,7 +52,7 @@ function Write-SectionSuccess {
 }
 #endregion
 
-$ScriptName = 'win11.garytown.com'
+$ScriptName = 'win11.tighenet.com'
 $ScriptVersion = '25.01.22.1'
 Write-Host -ForegroundColor Green "$ScriptName $ScriptVersion"
 #iex (irm functions.garytown.com) #Add custom functions used in Script Hosting in GitHub
@@ -181,4 +181,4 @@ if ($Manufacturer -match "Lenovo") {
     Copy-PSModuleToFolder -Name LSUClient -Destination "$PowerShellSavePath\Modules"
 }
 #Restart
-restart-computer
+Restart-Computer -Force
