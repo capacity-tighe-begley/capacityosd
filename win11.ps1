@@ -181,4 +181,4 @@ if ($Manufacturer -match "Lenovo") {
     Copy-PSModuleToFolder -Name LSUClient -Destination "$PowerShellSavePath\Modules"
 }
 #Restart
-restart-computer
+restart-computer -Force
