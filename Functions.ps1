@@ -1,27 +1,9 @@
 $ScriptName = 'functions.tighenet.com'
-$ScriptVersion = '25.1.7.1'
-Set-ExecutionPolicy Bypass -Force -ErrorAction SilentlyContinue
+$ScriptVersion = '25.3.3.1'
+#Set-ExecutionPolicy Bypass -Force -ErrorAction SilentlyContinue
 
 Write-Host -ForegroundColor Green "[+] $ScriptName $ScriptVersion"
 #endregion
-
-Write-Host -ForegroundColor Green "[+] Function Set-ByPassOOBE"
-Function Set-ByPassOOBE {
-    $ByPassOOBE = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OOBE"
-    if (!(Test-Path -Path $ByPassOOBE)){
-        New-Item -Path $ByPassOOBE -ItemType Directory
-    }
-    New-ItemProperty -Path $ByPassOOBE -Name "BypassNRO" -PropertyType dword -Value '1' -Force
-}
-
-Write-Host -ForegroundColor Green "[+] Function Set-AcceptEULA"
-function Set-AcceptEULA {
-    $AcceptEULA = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
-    if (!(Test-Path -Path $AcceptEULA)){
-        New-Item -Path $AcceptEULA -ItemType Directory
-    }
-    New-ItemProperty -Path $AcceptEULA -Name "EnableLUA" -PropertyType dword -Value '0' -Force
-}
 
 Write-Host -ForegroundColor Green "[+] Function Start-DISMFromOSDCloudUSB"
 Function Test-DISMFromOSDCloudUSB {
@@ -166,78 +148,145 @@ function Set-HyperVName {
     Write-Output "Renaming Computer to $HyperVName"
     Rename-Computer -NewName $HyperVName -Force 
 }
+Write-Host -ForegroundColor Green "[+] Function Get-SafeGuardHoldData (-ID)"
+function Get-SafeGuardHoldData {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$false)]
+        [string]$ID
+    )
+    $SafeGuardJSONURL = 'https://raw.githubusercontent.com/gwblok/garytown/master/Feature-Updates/SafeGuardHolds/SafeGuardHoldDataBase.json'
+    $SafeGuardData = (Invoke-WebRequest -URI $SafeGuardJSONURL).content | ConvertFrom-Json
+    if ($ID){
+        return $SafeGuardData | Where-Object {$_.SafeguardID -eq $ID}
+    }
+    else {
+        return $SafeGuardData
+    }
+}
+Write-Host -ForegroundColor Green "[+] Function Get-SafeGuardHoldID"
+function Get-SafeGuardHoldID {
+    $UX = Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators"
+    foreach ($U in $UX){
+        $GatedBlockId = $U.GetValue('GatedBlockId')
+        if ($GatedBlockId){
+            if ($GatedBlockId -ne "None"){
+                $SafeGuardID  = $GatedBlockId
+            }             
+        }
+    }
+if (!($SafeGuardID)){$SafeGuardID = "NONE"}
+return $SafeGuardID
+}
+Write-Host -ForegroundColor Green "[+] Function Run-Appraiser"
+function Run-Appraiser{
 
+    #Trigger Appraiser
 
+    $TaskName = "Microsoft Compatibility Appraiser"
+    $Task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    if ($Task -ne $null){
+        Write-Output "Triggering Task $($Task.TaskName)"
+        Start-ScheduledTask -InputObject $Task
+        Start-Sleep -Seconds 60
+    }
+    else {
+        Write-Output "No Task found with name: $TaskName"
+    }
+
+}
+#Need to rewrite to export this as PS object, instead of Write-Output
 Write-Host -ForegroundColor Green "[+] Function Get-MyComputerInfoBasic"
 Function Get-MyComputerInfoBasic {
     Function Convert-FromUnixDate ($UnixDate) {
         [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($UnixDate))
     }
     Function Get-TPMVer {
-    $Manufacturer = (Get-WmiObject -Class:Win32_ComputerSystem).Manufacturer
-    if ($Manufacturer -match "HP"){
-        if ($((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion) -match "1.2")
-            {
-            $versionInfo = (Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).ManufacturerVersionInfo
-            $verMaj      = [Convert]::ToInt32($versionInfo[0..1] -join '', 16)
-            $verMin      = [Convert]::ToInt32($versionInfo[2..3] -join '', 16)
-            $verBuild    = [Convert]::ToInt32($versionInfo[4..6] -join '', 16)
-            $verRevision = 0
-            [version]$ver = "$verMaj`.$verMin`.$verBuild`.$verRevision"
-            Write-Output "TPM Verion: $ver | Spec: $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion)"
+        $Manufacturer = (Get-WmiObject -Class:Win32_ComputerSystem).Manufacturer
+        if ($Manufacturer -match "HP"){
+            if ($((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion) -match "1.2")
+                {
+                $versionInfo = (Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).ManufacturerVersionInfo
+                $verMaj      = [Convert]::ToInt32($versionInfo[0..1] -join '', 16)
+                $verMin      = [Convert]::ToInt32($versionInfo[2..3] -join '', 16)
+                $verBuild    = [Convert]::ToInt32($versionInfo[4..6] -join '', 16)
+                $verRevision = 0
+                [version]$ver = "$verMaj`.$verMin`.$verBuild`.$verRevision"
+                $Return = New-Object -TypeName PSObject -Property @{
+                    ManufacturerVersion = $ver
+                    SpecVersion = (Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion
+                }
+                #Write-Output "TPM Verion: $ver | Spec: $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion)"
+                }
+            else {
+                $Return = New-Object -TypeName PSObject -Property @{
+                    ManufacturerVersion = $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).ManufacturerVersion)
+                    SpecVersion = (Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion
+                }
+                #Write-Output "TPM Verion: $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).ManufacturerVersion) | Spec: $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion)"}
+        
             }
-        else {Write-Output "TPM Verion: $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).ManufacturerVersion) | Spec: $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion)"}
-    }
-
-    else    {
-        if ($((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion) -match "1.2"){
-            Write-Output "TPM Verion: $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).ManufacturerVersion) | Spec: $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion)"
-            }
-        else {Write-Output "TPM Verion: $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).ManufacturerVersion) | Spec: $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion)"}
         }
+        else {
+            $Return = New-Object -TypeName PSObject -Property @{
+                ManufacturerVersion = $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).ManufacturerVersion)
+                SpecVersion = (Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion
+            }
+            #Write-Output "TPM Verion: $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).ManufacturerVersion) | Spec: $((Get-CimInstance -Namespace "ROOT\cimv2\Security\MicrosoftTpm" -ClassName Win32_TPM).SpecVersion)"
+        }
+        return $Return
     }
 
-    $BIOSInfo = Get-WmiObject -Class 'Win32_Bios'
 
     # Get the current BIOS release date and format it to datetime
-    $CurrentBIOSDate = [System.Management.ManagementDateTimeConverter]::ToDatetime($BIOSInfo.ReleaseDate).ToUniversalTime()
+    
+    #BIOSInfo = Get-WmiObject -Class 'Win32_Bios'
+    #$CurrentBIOSDate = [System.Management.ManagementDateTimeConverter]::ToDatetime($BIOSInfo.ReleaseDate).ToUniversalTime()
+    $BIOS = Get-CimInstance -Namespace root/cimv2 -ClassName win32_bios
+    $CurrentBIOSDate = $BIOS.ReleaseDate | Get-Date -Format "yyyy-MM-dd"
+    $BaseBoard = Get-CimInstance -Namespace root/cimv2 -ClassName Win32_BaseBoard
+    $ComputerSystem = Get-CimInstance -Namespace root/cimv2 -ClassName Win32_ComputerSystem
+    $ComputerSystemProduct = Get-CimInstance -Namespace root/cimv2 -ClassName Win32_ComputerSystemProduct
+    $Processor = @(Get-CimInstance -Namespace root/cimv2 -ClassName Win32_Processor)[0]
 
-    $Manufacturer = (Get-WmiObject -Class:Win32_ComputerSystem).Manufacturer
-    $ManufacturerBaseBoard = (Get-CimInstance -Namespace root/cimv2 -ClassName Win32_BaseBoard).Manufacturer
-    $ComputerModel = (Get-WmiObject -Class:Win32_ComputerSystem).Model
-    if ($ManufacturerBaseBoard -eq "Intel Corporation")
-        {
-        $ComputerModel = (Get-CimInstance -Namespace root/cimv2 -ClassName Win32_BaseBoard).Product
-        }
-    $HPProdCode = (Get-CimInstance -Namespace root/cimv2 -ClassName Win32_BaseBoard).Product
-    $Serial = (Get-WmiObject -class:win32_bios).SerialNumber
-    $LenovoName = (Get-CimInstance -ClassName Win32_ComputerSystemProduct).Version
-    $cpuDetails = @(Get-WmiObject -Class Win32_Processor)[0]
+    $Manufacturer = ($ComputerSystem).Manufacturer
+    $ManufacturerBaseBoard = ($BaseBoard).Manufacturer
+    $ComputerModel = ($ComputerSystem).Model
+    if ($ManufacturerBaseBoard -eq "Intel Corporation"){$ComputerModel = ($BaseBoard).Product}
+    $HPProdCode = ($BaseBoard).Product
+    $Serial = ($BIOS).SerialNumber
+    $LenovoName = ($ComputerSystemProduct).Version
 
-    Write-Output "Computer Name: $env:computername"
     $CurrentOSInfo = Get-Item -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
     $InstallDate_CurrentOS = Convert-FromUnixDate $CurrentOSInfo.GetValue('InstallDate')
     $WindowsRelease = $CurrentOSInfo.GetValue('ReleaseId')
     if ($WindowsRelease -eq "2009"){$WindowsRelease = $CurrentOSInfo.GetValue('DisplayVersion')}
     $BuildUBR_CurrentOS = $($CurrentOSInfo.GetValue('CurrentBuild'))+"."+$($CurrentOSInfo.GetValue('UBR'))
-    Write-Output "Windows $WindowsRelease | $BuildUBR_CurrentOS | Installed: $InstallDate_CurrentOS"
 
-    Write-Output "Computer Manufacturer: $Manufacturer"
-    Write-Output "Computer Model: $ComputerModel"
-    Write-Output "Serial: $Serial"
-    if ($Manufacturer -like "H*"){Write-Output "Computer Product Code: $HPProdCode"}
-    if ($Manufacturer -like "Le*"){Write-Output "Computer Friendly Name: $LenovoName"}
-    Write-Output $cpuDetails.Name
-    Write-Output "Current BIOS Level: $($BIOSInfo.SMBIOSBIOSVersion) From Date: $CurrentBIOSDate"
-    Get-TPMVer
-    Write-Output "Time Zone: $(Get-TimeZone)"
+    $TPM = Get-TPMVer
     $Locale = Get-WinSystemLocale
-    if ($Locale -ne "en-US"){Write-Output "WinSystemLocale: $locale"}
-    Get-WmiObject win32_LogicalDisk -Filter "DeviceID='C:'" | % { $FreeSpace = $_.FreeSpace/1GB -as [int] ; $DiskSize = $_.Size/1GB -as [int] }
+    $DiskInfo = Get-CimInstance -Namespace root/cimv2 -ClassName Win32_LogicalDisk -Filter "DeviceID='C:'"
+    $FreeSpace = $DiskInfo.FreeSpace/1GB -as [int]
+    $DiskSize = $DiskInfo.Size/1GB -as [int]
+    $Disks = Get-Disk | Where-Object {$_.BusType -ne "USB"}
 
 
+    Write-Output "Computer Name:                         $env:computername"
+    Write-Output "Windows Release & Build:               $WindowsRelease | $BuildUBR_CurrentOS "
+    Write-Output "Windows Install Date:                  $InstallDate_CurrentOS"
+    Write-Output "Manufacturer(Win32_ComputerSystem):    $Manufacturer"
+    Write-Output "Model (Win32_ComputerSystem):          $ComputerModel"
+    Write-Output "Serial (Win32_BIOS):                   $Serial"
+    Write-Output "SKU (Win32_ComputerSystem):            $($ComputerSystem.SystemSKUNumber)"
+    Write-Output "Product Code (Win32_BaseBoard):        $HPProdCode"
+    Write-Output "Version (Win32_ComputerSystemProduct): $LenovoName"
+    Write-Output "CPU:                                   $($Processor.Name)"
+    Write-Output "Current BIOS Level:                    $($BIOS.SMBIOSBIOSVersion) From Date: $CurrentBIOSDate"
+    Write-Output "TPM Info:                              $($TPM.ManufacturerVersion) | Spec: $($TPM.SpecVersion)"
+    Write-Output "Time Zone:                             $(Get-TimeZone)"
+    if ($Locale.Name -ne "en-US"){Write-Output "WinSystemLocale:                       $locale"}
+    Write-Output "Disk Info (C:\):                       Size: $DiskSize | Free: $Freespace"
 
-    Write-Output "DiskSize = $DiskSize, FreeSpace = $Freespace"
     #Get Volume Infomration
     try {$SecureBootStatus = Confirm-SecureBootUEFI}
     catch {}
@@ -246,18 +295,21 @@ Function Get-MyComputerInfoBasic {
         $SystemDisk = Get-Disk | Where-Object {$_.IsSystem -eq $true}
         $SystemPartition = Get-Partition -DiskNumber $SystemDisk.DiskNumber | Where-Object {$_.IsSystem -eq $true}  
         $SystemVolume = $Volume | Where-Object {$_.UniqueId -match $SystemPartition.Guid}
+        $TotalMB = [MATH]::Round(($SystemVolume).Size /1MB)
         $FreeMB = [MATH]::Round(($SystemVolume).SizeRemaining /1MB)
-        Write-Output "Systvem Volume FreeSpace = $FreeMB MB"
+        Write-Output "System Volume Info:                    Size: $TotalMB MB | Free: $FreeMB MB"
     }
 
-    $Disk = Get-Disk | Where-Object {$_.BusType -ne "USB"}
-    write-output "$($Disk.Model) $($Disk.BusType)"
     
+    foreach ($disk in $Disks){
+        write-output "Disk[#$($Disk.DiskNumber)] Model:                        $($Disk.Model) | $($Disk.BusType) | $([MATH]::Round($Disk.Size / 1GB))GB"
+    }
 
     $MemorySize = [math]::Round((Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory/1MB)
-    Write-Output "Memory size = $MemorySize MB"
+    Write-Output "Memory size:                           $MemorySize MB"
 }
-
+Write-Host -ForegroundColor Green "[+] Function Build-ComputerName"
+iex (irm https://raw.githubusercontent.com/gwblok/garytown/refs/heads/master/OSD/CloudOSD/CreateOSDComputerName.ps1)
 
 
 Write-Host -ForegroundColor Green "[+] Function Get-UBR"
@@ -401,15 +453,20 @@ Function Set-Win11ReqBypassRegValues {
         New-ItemProperty -Path "HKLM:\SYSTEM\Setup\MoSetup" -Name "AllowUpgradesWithUnsupportedTPMOrCPU" -Value 1 -PropertyType DWORD -Force | out-null
     }
 }
-
+Write-Host -ForegroundColor Green "[+] Functions for HP TPM"
+iex (irm https://raw.githubusercontent.com/OSDeploy/OSD/master/Public/OSDCloudTS/Get-HPTPMDetermine.ps1)
 Write-Host -ForegroundColor Green "[+] Function Start-WindowsUpdate"
 iex (irm https://raw.githubusercontent.com/OSDeploy/OSD/master/Public/OSDCloudTS/Start-WindowsUpdate.ps1)
 
-Write-Host -ForegroundColor Green "[+] Functions for HP TPM"
-iex (irm https://raw.githubusercontent.com/OSDeploy/OSD/master/Public/OSDCloudTS/Get-HPTPMDetermine.ps1)
-
 Write-Host -ForegroundColor Green "[+] Function Start-WindowsUpdateDriver"
 iex (irm https://raw.githubusercontent.com/OSDeploy/OSD/master/Public/OSDCloudTS/Start-WindowsUpdateDrivers.ps1)
+
+Write-Host -ForegroundColor Green "[+] Function Invoke-WindowsUpdate"
+Write-Host -ForegroundColor Green "[+] Reset-WindowsUpdateRegistry"
+Write-Host -ForegroundColor Green "[+] Reset-WindowsUpdate"
+iex (irm https://raw.githubusercontent.com/gwblok/garytown/refs/heads/master/SoftwareUpdates/WindowsUpdateFunctions.ps1)
+
+
 
 Write-Host -ForegroundColor Green "[+] Function Enable-AutoTimeZoneUpdate"
 Function Enable-AutoTimeZoneUpdate {
@@ -914,13 +971,13 @@ Write-Host -ForegroundColor Green "[+] Function Get-HPSoftpaqItems"
 Write-Host -ForegroundColor Green "[+] Function Get-HPDriverPackLatest"
 iex (irm https://raw.githubusercontent.com/OSDeploy/OSD/master/Public/OSDCloudTS/Test-HPIASupport.ps1)
 
-# #Install-ModuleHPCMSL
-# Write-Host -ForegroundColor Green "[+] Function Install-ModuleHPCMSL"
-# iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/CMSL/Install-ModuleHPCMSL.ps1)
+#Install-ModuleHPCMSL
+Write-Host -ForegroundColor Green "[+] Function Install-ModuleHPCMSL"
+iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/EMPS/Install-ModuleHPCMSL.ps1)
 
 Write-Host -ForegroundColor Green "[+] Function Invoke-HPAnalyzer"
-# Write-Host -ForegroundColor Green "[+] Function Invoke-HPDriverUpdate"
-# iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/CMSL/Invoke-HPDriverUpdate.ps1)
+Write-Host -ForegroundColor Green "[+] Function Invoke-HPDriverUpdate"
+iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/EMPS/Invoke-HPDriverUpdate.ps1)
 
 Write-Host -ForegroundColor Green "[+] Function Get-HPDockUpdateDetails"
 iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/hardware/HP/Docks/Function_Get-HPDockUpdateDetails.ps1)
@@ -943,6 +1000,11 @@ function Get-WindowsESDFileInfo {iex (irm https://raw.githubusercontent.com/gwbl
 Write-Host -ForegroundColor Green "[+] Function Check-ComplianceKB5025885"
 iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/ConfigMgr/Baselines/CVE-2023-24932/KB5025885-CheckCompliance.ps1)
 
+Write-Host -ForegroundColor Green "[+] Function Invoke-ComplianceKB5025885"
+function Invoke-ComplianceKB5025885 {
+    iex (irm https://raw.githubusercontent.com/gwblok/garytown/refs/heads/master/ConfigMgr/Baselines/CVE-2023-24932/KB5025885-PSRemediationScript_Step1-2_HPCMSL.ps1)
+}
+
 if ((Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer -match "Lenovo"){
 	Write-Host -ForegroundColor Green "[+] Function Install-LenovoDMM"
     function Install-LenovoDMM {
@@ -958,4 +1020,13 @@ if ((Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer -match "Dell"
 	Write-Host -ForegroundColor Green "[+] Function OSDCloud-DCU..."
 	iex (irm https://raw.githubusercontent.com/OSDeploy/OSD/master/cloud/modules/devicesdell.psm1)
 }
+
+write-host "Branch Cache 2Pint Scripts" -ForegroundColor Cyan
+
+Write-Host -ForegroundColor Green "[+] Function Setup-BranchCache"
+function Setup-BranchCache {
+	iex (irm 'https://raw.githubusercontent.com/2pintsoftware/BranchCache/refs/heads/master/ConfigMgr%20Configuration%20Item%20(CI)%20to%20Enable%20and%20Tune%20BranchCache/Source/MAIN_REMEDIATE.ps1')
+ 	iex (irm 'https://raw.githubusercontent.com/2pintsoftware/BranchCache/refs/heads/master/ConfigMgr%20Configuration%20Item%20(CI)%20to%20Enable%20and%20Tune%20BranchCache/Source/CacheSize_REMEDIATE.ps1')
+ }
+
 
