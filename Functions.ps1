@@ -309,7 +309,7 @@ Function Get-MyComputerInfoBasic {
     Write-Output "Memory size:                           $MemorySize MB"
 }
 Write-Host -ForegroundColor Green "[+] Function Build-ComputerName"
-iex (irm https://raw.githubusercontent.com/gwblok/garytown/refs/heads/master/OSD/CloudOSD/CreateOSDComputerName.ps1)
+iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/CreateOSDComputerName.ps1)
 
 
 Write-Host -ForegroundColor Green "[+] Function Get-UBR"
