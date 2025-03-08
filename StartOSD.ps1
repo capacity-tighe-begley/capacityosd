@@ -267,12 +267,12 @@ if ($env:SystemDrive -ne 'X:') {
 
     #OEM Updates
     try {
-        iex (irm )
+        iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/LenovoUpdate.ps1)
     }
     catch {}
 
     try {
-        iex (irm https://dell.garytown.com)
+        iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/OOBE_DELL.ps1)
     }
     catch {}
 
