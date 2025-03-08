@@ -1,4 +1,4 @@
-#to Run, boot OSDCloudUSB, at the PS Prompt: iex (irm win11.garytown.com)
+#to Run, boot OSDCloudUSB, at the PS Prompt: iex (irm win11.tighenet.com)
 
 #region Initialization
 function Write-DarkGrayDate {
@@ -52,7 +52,7 @@ function Write-SectionSuccess {
 }
 #endregion
 
-$ScriptName = 'win11.garytown.com'
+$ScriptName = 'win11.tighenet.com'
 $ScriptVersion = '25.01.22.1'
 Write-Host -ForegroundColor Green "$ScriptName $ScriptVersion"
 #iex (irm functions.garytown.com) #Add custom functions used in Script Hosting in GitHub
@@ -165,10 +165,10 @@ Write-SectionHeader -Message "OSDCloud Process Complete, Running Custom Actions 
 
 
 
-#Used in Testing "Beta Gary Modules which I've updated on the USB Stick"
-$OfflineModulePath = (Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\osd" | Where-Object {$_.Attributes -match "Directory"} | Select-Object -Last 1).fullname
-write-host -ForegroundColor Yellow "Updating $OfflineModulePath using $ModulePath - For Dev Purposes Only"
-copy-item "$ModulePath\*" "$OfflineModulePath"  -Force -Recurse
+# #Used in Testing "Beta Gary Modules which I've updated on the USB Stick"
+# $OfflineModulePath = (Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\osd" | Where-Object {$_.Attributes -match "Directory"} | Select-Object -Last 1).fullname
+# write-host -ForegroundColor Yellow "Updating $OfflineModulePath using $ModulePath - For Dev Purposes Only"
+# copy-item "$ModulePath\*" "$OfflineModulePath"  -Force -Recurse
 
 #Copy CMTrace Local:
 if (Test-path -path "x:\windows\system32\cmtrace.exe"){
@@ -183,4 +183,4 @@ if ($Manufacturer -match "Lenovo") {
     Copy-PSModuleToFolder -Name Lenovo.Client.Scripting -Destination "$PowerShellSavePath\Modules"
 }
 #Restart
-#restart-computer
+restart-computer -Force
