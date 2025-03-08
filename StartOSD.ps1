@@ -3,7 +3,7 @@ Loads Functions
 Creates Setup Complete Files
 #>
 
-$ScriptName1 = 'hope.garytown.com'
+$ScriptName1 = 'hope.tighenet.com'
 $ScriptVersion1 = '25.1.22.1'
 
 
@@ -60,7 +60,7 @@ function Write-SectionSuccess {
 #endregion
 
 
-iex (irm functions.garytown.com)
+iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/Functions.ps1)
 #region functions
 <#
 function Set-SetupCompleteCreateStartHOPEonUSB {
@@ -140,7 +140,7 @@ function New-SetupCompleteOSDCloudFiles{
 }
 #endregion
 if ($env:SystemDrive -eq 'X:') {
-    $LogName = "Hope-$((Get-Date).ToString('yyyy-MM-dd-HHmmss')).log"
+    $LogName = "CapacityOSD-$((Get-Date).ToString('yyyy-MM-dd-HHmmss')).log"
     Start-Transcript -Path $env:TEMP\$LogName -Append -Force
 }
 Write-SectionHeader -Message "Starting $ScriptName1 $ScriptVersion1"
@@ -176,8 +176,8 @@ if ($env:SystemDrive -eq 'X:') {
     else{
         Write-Host -ForegroundColor DarkGray "No Connection to WD1TB, Skipping Drive Mapping"
     }
-    Write-SectionHeader -Message "Starting win11.garytown.com"
-    iex (irm win11.garytown.com)
+    Write-SectionHeader -Message "Starting win11.tighenet.com"
+    iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/win11.ps1)
 
     #Create Marker so it knows this is a "HOPE" computer - No longer need thanks to the custom setup complete above.
     #new-item -Path C:\OSDCloud\configs -Name hope.JSON -ItemType file
@@ -200,7 +200,7 @@ if ($env:SystemDrive -ne 'X:') {
     Set-ExecutionPolicy Bypass -Force
 
     #Setup Post Actions Scheduled Task
-    iex (irm "https://raw.githubusercontent.com/gwblok/garytown/master/Dev/CloudScripts/PostActionsTask.ps1")
+    iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/PostActionsTask.ps1)
 
     #Disable Auto Bitlocker
     New-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker -Name PreventDeviceEncryption -PropertyType dword -Value 1 -Force
@@ -221,8 +221,8 @@ if ($env:SystemDrive -ne 'X:') {
     #Set DO
     #Set-DOPoliciesGPORegistry
     
-    Write-SectionHeader -Message "**Running Test.garytown.com**" 
-    iex (irm test.garytown.com)
+    Write-SectionHeader -Message "**Running Test.tighenet.com**" 
+    iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/test.ps1)
      
     #Set Time Zone to Automatic Update
     #Write-Host -ForegroundColor Gray "**Setting Time Zone for Auto Update**" 
@@ -263,11 +263,11 @@ if ($env:SystemDrive -ne 'X:') {
 
     #Modified Version of Andrew's Debloat Script
     Write-SectionHeader -Message "**Running Debloat Script**" 
-    iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/Dev/CloudScripts/Debloat.ps1)
+    iex (irm https://raw.githubusercontent.com/capacity-tighe-begley/capacityosd/refs/heads/main/Debloat.ps1)
 
     #OEM Updates
     try {
-        iex (irm https://raw.githubusercontent.com/gwblok/garytown/master/Dev/CloudScripts/LenovoUpdate.ps1)
+        iex (irm )
     }
     catch {}
 
@@ -280,5 +280,5 @@ if ($env:SystemDrive -ne 'X:') {
     Write-Host -ForegroundColor Gray "**Setting TimeZone based on IP**"
     Set-TimeZoneFromIP
 
-    Write-SectionHeader -Message  "**Completed Hope.garytown.com sub script**" 
+    Write-SectionHeader -Message  "**Completed startosd.tighenet.com sub script**" 
 }
